@@ -19,13 +19,32 @@
         crossorigin="anonymous"></script>
 
     <style>
-        .imgtable {
+        .imgtable,
+        .totaltable {
             width: 100%;
         }
 
-        .imgtable td {
-            width: 15%;
+        .imgtable {
+            margin-bottom: .25em;
+        }
+
+        .totaltable td {
+            padding-top: 0px;
+            padding-bottom: 0px;
+        }
+
+        .lowestEnergy {
+            background-color: pink;
+        }
+
+        .imgtable td,
+        .totaltable td {
+            width: 20%;
             cursor: pointer;
+        }
+
+        td.targetedEnergy {
+            border: 3px solid yellow;
         }
 
         #colorpreview {
@@ -33,11 +52,15 @@
             height: 20px;
             display: inline-block;
         }
+
+        .math {
+            font-family: 'Courier New', Courier, monospace;
+        }
     </style>
 
     <script>
 
-        const W = 6, H = 4;
+        const W = 5, H = 4;
 
         function hexToRgb(hex) {
             // turn hex val to RGB
@@ -60,9 +83,13 @@
             return Math.floor(Math.random() * 16777215).toString(16);
         }
 
+        function getRGB(thing) {
+            let c = thing.css('background-color');
+            return c.replace(/^(rgb|rgba)\(/, '').replace(/\)$/, '').replace(/\s/g, '').split(',');
+        }
+
         function makeCellText(cell) {
-            let c = cell.css('background-color');
-            let rgb = c.replace(/^(rgb|rgba)\(/, '').replace(/\)$/, '').replace(/\s/g, '').split(',');
+            let rgb = getRGB(cell);
             cell.css("color", getContrast(rgb));
             let maxvalue = 255 / $("#maxvalue").val();
             let r = rgb[0] / maxvalue, g = rgb[1] / maxvalue, b = rgb[2] / maxvalue;
@@ -72,25 +99,177 @@
         function remakeAllCells(where) {
             where.find("td").each(function () {
                 $(this).html(makeCellText($(this)));
+                recalculateEnergy($(this));
             });
+            explainCell();
+        }
+
+        function deltaColor(first, second, index, maxvalue) {
+            return Math.pow(getRGB(first)[index] / maxvalue - getRGB(second)[index] / maxvalue, 2);
+        }
+        function deltaColorString(first, second, index, maxvalue) {
+            let f = getRGB(first)[index] / maxvalue;
+            let s = getRGB(second)[index] / maxvalue;
+            return `(${f} - ${s})<sup>2</sup>`;
+        }
+
+        function getNeighbors(cell, cells) {
+            // Coordinates
+            let x = parseInt(cell.attr("x"), 10), y = parseInt(cell.attr("y"), 10);
+            let upY = Math.max(0, y - 1), downY = Math.min(H - 1, y + 1);
+            let leftX = Math.max(0, x - 1), rightX = Math.min(W - 1, x + 1);
+            // Cells
+            let up = cells[upY][x], down = cells[downY][x];
+            let left = cells[y][leftX], right = cells[y][rightX];
+            return { up, down, left, right, x, y };
+        }
+
+        var targetedCell = null;
+        function explainCell(cell) {
+            if (cell === undefined) {
+                cell = $(".targetedEnergy");
+                if (!cell.length) {
+                    return;
+                }
+            } else {
+                $(".targetedEnergy").removeClass("targetedEnergy");
+                cell.addClass("targetedEnergy");
+            }
+            let explanation = cachedExplains[cell.attr("x") + "|" + cell.attr("y")];
+            $("#stats").html(explanation);
+            targetedCell = cell;
+        }
+
+        function getMaxEnergy() {
+            let maxvalue = $("#maxvalue").val();
+            return 2 * 3 * maxvalue * maxvalue;
+        }
+
+        var cachedExplains = {};
+        function makeEnergyText(cell) {
+            let { up, down, left, right, x, y } = getNeighbors(cell, cells);
+            let maxvalue = 255 / $("#maxvalue").val();
+            // Color Deltas
+            let xRedDelta = deltaColor(left, right, 0, maxvalue);
+            let xGreenDelta = deltaColor(left, right, 1, maxvalue);
+            let xBlueDelta = deltaColor(left, right, 2, maxvalue);
+            let yRedDelta = deltaColor(up, down, 0, maxvalue);
+            let yGreenDelta = deltaColor(up, down, 1, maxvalue);
+            let yBlueDelta = deltaColor(up, down, 2, maxvalue);
+            // Overall Deltas
+            let xDelta = xRedDelta + xBlueDelta + xGreenDelta;
+            let yDelta = yRedDelta + yBlueDelta + yGreenDelta;
+            // Energy
+            let energy = xDelta + yDelta;
+            //cell.html(energy);
+            const m = (l1, l2) => `&Delta;${l1}<sub>${l2}</sub><sup>2</sup>`;
+            cachedExplains[x + "|" + y] = `
+            <div class='row math mb-1'>
+                <div class='col-md-4'>
+                    &Delta;X<sup>2</sup>=${xDelta}<br>
+                    =${m('r', 'x')}+${m('g', 'x')}+${m('b', 'x')}<br>
+                    =${xRedDelta}+${xGreenDelta}+${xBlueDelta}<br>
+                </div>
+                <div class='col-md-4'>
+                    &Delta;Y<sup>2</sup>=${yDelta}<br>
+                    =${m('r', 'y')}+${m('g', 'y')}+${m('b', 'y')}<br>
+                    =${yRedDelta}+${yGreenDelta}+${yBlueDelta}<br>
+                </div>
+                <div class='col-md-4'>
+                    e(X, Y)=${energy}<br>
+                    =|&Delta;X|<sup>2</sup> + |&Delta;Y|<sup>2</sup><br>
+                    =${xDelta} + ${yDelta}<br>
+                </div>
+            </div>
+            <hr>
+            <div class='row math'>
+                <div class='col-md-4'>
+                    ${m('r', 'x')}=${xRedDelta}<br>
+                    =${deltaColorString(left, right, 0, maxvalue)}
+                </div><div class='col-md-4'>
+                    ${m('g', 'x')}=${xGreenDelta}<br>
+                    =${deltaColorString(left, right, 1, maxvalue)}
+                </div><div class='col-md-4'>
+                    ${m('b', 'x')}=${xBlueDelta}<br>
+                    =${deltaColorString(left, right, 2, maxvalue)}
+                </div>
+            </div>
+            <hr>
+            <div class='row math'>
+                <div class='col-md-4'>
+                    ${m('r', 'y')}=${yRedDelta}<br>
+                    =${deltaColorString(up, down, 0, maxvalue)}
+                </div><div class='col-md-4'>
+                    ${m('g', 'y')}=${yGreenDelta}<br>
+                    =${deltaColorString(up, down, 1, maxvalue)}
+                </div><div class='col-md-4'>
+                    ${m('b', 'y')}=${yBlueDelta}<br>
+                    =${deltaColorString(up, down, 2, maxvalue)}
+                </div>
+            </div>
+            `;
+            cell.html(energy);
+            let bright = 255 * energy / getMaxEnergy();
+            let color = `rgb(${bright}, ${bright}, ${bright})`;
+            cell.css("background-color", color);
+            cell.css("color", getContrast([bright, bright, bright]));
+            return energy;
+        }
+
+        function recalculateEnergy(cell) {
+            let { up, down, left, right, x, y } = getNeighbors(cell, energies);
+            [up, down, left, right].forEach(v => {
+                makeEnergyText(v);
+            });
+            updateTotals();
+        }
+
+        function updateTotals() {
+            let newRow = $("<tr></tr>");
+            let lowest = { x: null, v: null };
+            let totalCells = [];
+            for (let x = 0; x < W; x += 1) {
+                let totalCell = $("<td></td>");
+                let totalEnergy = 0;
+                for (let y = 0; y < H; y += 1) {
+                    console.log(energies[y][x], y, x);
+                    totalEnergy += parseInt(energies[y][x].html(), 10);
+                }
+                totalCell.html(totalEnergy);
+                totalCells.push(totalCell);
+                newRow.append(totalCell);
+                if (lowest.v === null || lowest.v > totalEnergy) {
+                    lowest.v = totalEnergy, lowest.x = x;
+                }
+            }
+            $(".lowestEnergy").removeClass("lowestEnergy");
+            totalCells[lowest.x].addClass("lowestEnergy");
+            $("#totaltable").html(newRow);
+        }
+
+        function updateCell(cell) {
+            let color = $("#color").val();
+            cell.css("background-color", color);
+            cell.html(makeCellText(cell));
+            recalculateEnergy(cell);
+            explainCell();
         }
 
         function makeCell(x, y, active) {
             let cell = $("<td></td>");
             cell.css("background-color", "#000")
-            cell.html(makeCellText(cell));
             cell.attr("x", x);
             cell.attr("y", y);
+            cell.attr("id", x + "|" + y);
             if (active) {
+                cell.html(makeCellText(cell));
                 cell.mouseover(() => {
                     if (isDown) {
-                        cell.css("background-color", $("#color").val());
-                        cell.html(makeCellText(cell));
+                        updateCell(cell);
                         return false;
                     }
                 }).mousedown(() => {
-                    cell.css("background-color", $("#color").val());
-                    cell.html(makeCellText(cell));
+                    updateCell(cell);
                     isDown = true;
                     return false;
                 });
@@ -98,6 +277,7 @@
             return cell;
         }
 
+        var cells = [], energies = [];
         function createTable(where, w, h, active) {
             let tbl = $("<table></table>");
             tbl.addClass("imgtable table table-bordered");
@@ -105,10 +285,18 @@
             //tbl.attr('border', '1');
             for (let y = 0; y < h; y++) {
                 let row = $("<tr></tr>");
+                let cellsRow = [];
                 for (let x = 0; x < w; x++) {
-                    row.append(makeCell(x, y, active));
+                    let cell = makeCell(x, y, active);
+                    row.append(cell);
+                    cellsRow.push(cell);
                 }
                 tbl.append(row);
+                if (active) {
+                    cells.push(cellsRow);
+                } else {
+                    energies.push(cellsRow);
+                }
             }
             where.html(tbl);
         }
@@ -116,6 +304,9 @@
         $(document).ready(() => {
             createTable($("#left"), W, H, true);
             createTable($("#right"), W, H, false);
+            $("#right")
+                .append($("<table></table>", { "class": "totaltable table table-bordered", id: "totaltable" }))
+                .append($("<div></div>", { id: "stats" }));
             $("#colorpreview").css("background-color", $("#color").val());
 
             $("#maxvalue").change(() => {
@@ -125,6 +316,21 @@
             $("#color").on('change', () => {
                 $("#colorpreview").css("background-color", $("#color").val());
             });
+
+            $("#setall").click(() => {
+                $("#left").find("td").each(function () {
+                    updateCell($(this));
+                });
+            });
+
+            $("#right .imgtable").find("td").click(function () {
+                explainCell($(this));
+                //makeEnergyText($(this));
+            });
+            $("#right .imgtable").find("td").each(function () {
+                makeEnergyText($(this));
+            });
+            updateTotals();
 
         }).mousedown(function () {
             isDown = true;      // When mouse goes down, set isDown to true
@@ -161,12 +367,12 @@
                     <option value="yellow">Yellow</option>
                 </select>
                 <div id="colorpreview"></div>
-                <button class='btn btn-outline-secondary btn-sm'>Set All</button>
+                <button class='btn btn-outline-secondary btn-sm' id="setall">Set All</button>
             </div>
         </div>
         <div class='row'>
             <div class='col-md' id="left">Left</div>
-            <div class='col-md' id="right">Right</div>
+            <div class='col-md' id="right"></div>
         </div>
 
     </div>

@@ -6,6 +6,29 @@
     <!-- Bootstrap -->
     <!-- Latest compiled and minified CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    
+    <script>
+      function createTable(where, w, h) {
+        let tbl = $("<table></table>");
+        //tbl.css("width", "100%");
+        //tbl.attr('border', '1');
+        for (let y=0; y<h; y++) {
+          let row = $("<tr></tr>");
+          for (let x=0; x<w; x++) {
+            let cell = $("<td></td>");
+            cell.html("R: 0, G: 0, B: 0");
+            row.append(cell);
+          }
+          tbl.append(row);
+        }
+        
+      }
+      $(document).ready(() => {
+        createTable($("#left"), 8, 8);
+        createTable($("#right"), 8, 8);
+      });
+    </script>
+    
   <body>
     <div class="container">
 
@@ -13,8 +36,8 @@
         <div class='col-md'>Toolbar</div>
       </div>
       <div class='row'>
-        <div class='col-md'>Left</div>
-        <div class='col-md'>Right</div>
+        <div class='col-md' id="left">Left</div>
+        <div class='col-md' id="right">Right</div>
       </div>
     
     </div>

@@ -298,7 +298,7 @@
                     energies.push(cellsRow);
                 }
             }
-            where.html(tbl);
+            where.prepend(tbl);
         }
         var isDown = false;
         $(document).ready(() => {
@@ -306,7 +306,7 @@
             createTable($("#right"), W, H, false);
             $("#right")
                 .append($("<table></table>", { "class": "totaltable table table-bordered", id: "totaltable" }))
-                .append($("<div></div>", { id: "stats" }));
+                .append($("<div></div>", { id: "stats", html: "Click cell for formulae" }));
             $("#colorpreview").css("background-color", $("#color").val());
 
             $("#maxvalue").change(() => {
@@ -347,15 +347,13 @@
         <div class='row'>
             <div class='col-md'>
                 <label for="maxvalue">Max Value:</label>
-                <select name="maxvalue" id="maxvalue">
+                <select name="maxvalue" id="maxvalue" class='mr-4'>
                     <option value=1>1</option>
                     <option value=10>10</option>
                     <option value=100>100</option>
                     <option value=255>255</option>
                 </select>
-            </div>
-            <div class='col-md'>
-                <label for="color">Color:</label>
+                <label for="color">Painting Color:</label>
                 <select name="color" id="color">
                     <option value="black">Black</option>
                     <option value="white" selected>White</option>
@@ -369,9 +367,10 @@
                 <div id="colorpreview"></div>
                 <button class='btn btn-outline-secondary btn-sm' id="setall">Set All</button>
             </div>
+            <div class='col-md'>Energies</div>
         </div>
         <div class='row'>
-            <div class='col-md' id="left">Left</div>
+            <div class='col-md' id="left">Click cell to change color</div>
             <div class='col-md' id="right"></div>
         </div>
 

@@ -1,49 +1,176 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <title>Bootstrap 101 Template</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Bootstrap -->
     <!-- Latest compiled and minified CSS -->
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
-    
-    <script>
-      function createTable(where, w, h) {
-        let tbl = $("<table></table>");
-        //tbl.css("width", "100%");
-        //tbl.attr('border', '1');
-        for (let y=0; y<h; y++) {
-          let row = $("<tr></tr>");
-          for (let x=0; x<w; x++) {
-            let cell = $("<td></td>");
-            cell.html("R: 0, G: 0, B: 0");
-            row.append(cell);
-          }
-          tbl.append(row);
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+        integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+        integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+        crossorigin="anonymous"></script>
+
+    <style>
+        .imgtable {
+            width: 100%;
         }
-        
-      }
-      $(document).ready(() => {
-        createTable($("#left"), 8, 8);
-        createTable($("#right"), 8, 8);
-      });
+
+        .imgtable td {
+            width: 15%;
+            cursor: pointer;
+        }
+
+        #colorpreview {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+        }
+    </style>
+
+    <script>
+
+        const W = 6, H = 4;
+
+        function hexToRgb(hex) {
+            // turn hex val to RGB
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result
+                ? {
+                    r: parseInt(result[1], 16),
+                    g: parseInt(result[2], 16),
+                    b: parseInt(result[3], 16)
+                }
+                : null;
+        }
+
+        // calc to work out if it will match on black or white better
+        function getContrast(rgb) {
+            return ((rgb[0] * 299 + rgb[1] * 587 + rgb[2] * 114) / 1000) >= 128 ? 'black' : 'white'
+        }
+
+        function randomColor() {
+            return Math.floor(Math.random() * 16777215).toString(16);
+        }
+
+        function makeCellText(cell) {
+            let c = cell.css('background-color');
+            let rgb = c.replace(/^(rgb|rgba)\(/, '').replace(/\)$/, '').replace(/\s/g, '').split(',');
+            cell.css("color", getContrast(rgb));
+            let maxvalue = 255 / $("#maxvalue").val();
+            let r = rgb[0] / maxvalue, g = rgb[1] / maxvalue, b = rgb[2] / maxvalue;
+            return `R: ${r}<br>G: ${g}<br>B: ${b}`;
+        }
+
+        function remakeAllCells(where) {
+            where.find("td").each(function () {
+                $(this).html(makeCellText($(this)));
+            });
+        }
+
+        function makeCell(x, y, active) {
+            let cell = $("<td></td>");
+            cell.css("background-color", "#000")
+            cell.html(makeCellText(cell));
+            cell.attr("x", x);
+            cell.attr("y", y);
+            if (active) {
+                cell.mouseover(() => {
+                    if (isDown) {
+                        cell.css("background-color", $("#color").val());
+                        cell.html(makeCellText(cell));
+                        return false;
+                    }
+                }).mousedown(() => {
+                    cell.css("background-color", $("#color").val());
+                    cell.html(makeCellText(cell));
+                    isDown = true;
+                    return false;
+                });
+            }
+            return cell;
+        }
+
+        function createTable(where, w, h, active) {
+            let tbl = $("<table></table>");
+            tbl.addClass("imgtable table table-bordered");
+            //tbl.css("width", "100%");
+            //tbl.attr('border', '1');
+            for (let y = 0; y < h; y++) {
+                let row = $("<tr></tr>");
+                for (let x = 0; x < w; x++) {
+                    row.append(makeCell(x, y, active));
+                }
+                tbl.append(row);
+            }
+            where.html(tbl);
+        }
+        var isDown = false;
+        $(document).ready(() => {
+            createTable($("#left"), W, H, true);
+            createTable($("#right"), W, H, false);
+            $("#colorpreview").css("background-color", $("#color").val());
+
+            $("#maxvalue").change(() => {
+                remakeAllCells($("#left"));
+            });
+
+            $("#color").on('change', () => {
+                $("#colorpreview").css("background-color", $("#color").val());
+            });
+
+        }).mousedown(function () {
+            isDown = true;      // When mouse goes down, set isDown to true
+        }).mouseup(function () {
+            isDown = false;    // When mouse goes up, set isDown to false
+        });
+
+
     </script>
-    
-  <body>
+
+<body>
     <div class="container">
 
-      <div class='row'>
-        <div class='col-md'>Toolbar</div>
-      </div>
-      <div class='row'>
-        <div class='col-md' id="left">Left</div>
-        <div class='col-md' id="right">Right</div>
-      </div>
-    
+        <div class='row'>
+            <div class='col-md'>
+                <label for="maxvalue">Max Value:</label>
+                <select name="maxvalue" id="maxvalue">
+                    <option value=1>1</option>
+                    <option value=10>10</option>
+                    <option value=100>100</option>
+                    <option value=255>255</option>
+                </select>
+            </div>
+            <div class='col-md'>
+                <label for="color">Color:</label>
+                <select name="color" id="color">
+                    <option value="black">Black</option>
+                    <option value="white" selected>White</option>
+                    <option value="red">Red</option>
+                    <option value="lime">Green</option>
+                    <option value="blue">Blue</option>
+                    <option value="cyan">Cyan</option>
+                    <option value="magenta">Magenta</option>
+                    <option value="yellow">Yellow</option>
+                </select>
+                <div id="colorpreview"></div>
+                <button class='btn btn-outline-secondary btn-sm'>Set All</button>
+            </div>
+        </div>
+        <div class='row'>
+            <div class='col-md' id="left">Left</div>
+            <div class='col-md' id="right">Right</div>
+        </div>
+
     </div>
-    
-  </body>
+
+</body>
+
 </html>

@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Bootstrap 101 Template</title>
+    <title>Interactive Seam Carving Example</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Bootstrap -->
     <!-- Latest compiled and minified CSS -->
@@ -306,7 +306,7 @@
             createTable($("#right"), W, H, false);
             $("#right")
                 .append($("<table></table>", { "class": "totaltable table table-bordered", id: "totaltable" }))
-                .append($("<div></div>", { id: "stats", html: "Click cell for formulae" }));
+                .append($("<div></div>", { id: "stats", html: "Click cell for formulas" }));
             $("#colorpreview").css("background-color", $("#color").val());
 
             $("#maxvalue").change(() => {
@@ -375,6 +375,18 @@
         </div>
 
     </div>
+
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-9632407-4"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'UA-9632407-4');
+    </script>
+
 
 </body>
 

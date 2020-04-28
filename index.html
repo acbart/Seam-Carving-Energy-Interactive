@@ -39,7 +39,7 @@
 
         .imgtable td,
         .totaltable td {
-            width: 20%;
+            /*width: 20%;*/
             cursor: pointer;
         }
 
@@ -60,6 +60,10 @@
 
     <script>
 
+        function getQuery(q) {
+            return (window.location.search.match(new RegExp('[?&]' + q + '=([^&]+)')) || [, null])[1];
+        }
+
         const W = 5, H = 4;
 
         function hexToRgb(hex) {
@@ -73,6 +77,12 @@
                 }
                 : null;
         }
+
+        function randomElement(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+
+        const COLORS = ['#000', '#FFF', '#F00', '#0F0', '#00F', '#FF0', '#F0F', '#0FF'];
 
         // calc to work out if it will match on black or white better
         function getContrast(rgb) {
@@ -221,7 +231,7 @@
             [up, down, left, right].forEach(v => {
                 makeEnergyText(v);
             });
-            updateTotals();
+            //updateTotals();
         }
 
         function updateTotals() {
@@ -257,7 +267,11 @@
 
         function makeCell(x, y, active) {
             let cell = $("<td></td>");
-            cell.css("background-color", "#000")
+            if (active && getQuery('randomize')) {
+                cell.css("background-color", randomElement(COLORS));
+            } else {
+                cell.css("background-color", "#000");
+            }
             cell.attr("x", x);
             cell.attr("y", y);
             cell.attr("id", x + "|" + y);
@@ -305,7 +319,7 @@
             createTable($("#left"), W, H, true);
             createTable($("#right"), W, H, false);
             $("#right")
-                .append($("<table></table>", { "class": "totaltable table table-bordered", id: "totaltable" }))
+                //.append($("<table></table>", { "class": "totaltable table table-bordered", id: "totaltable" }))
                 .append($("<div></div>", { id: "stats", html: "Click cell for formulas" }));
             $("#colorpreview").css("background-color", $("#color").val());
 
@@ -330,7 +344,7 @@
             $("#right .imgtable").find("td").each(function () {
                 makeEnergyText($(this));
             });
-            updateTotals();
+            //updateTotals();
 
         }).mousedown(function () {
             isDown = true;      // When mouse goes down, set isDown to true
